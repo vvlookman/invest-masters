@@ -1,13 +1,14 @@
 use clap::Subcommand;
 
-mod info;
+mod evaluate;
 mod masters;
 
 #[derive(Subcommand)]
 pub enum Commands {
-    #[command(about = "Display system-wide information")]
-    Info(Box<info::InfoCommand>),
+    #[command(about = "Evaluate investments")]
+    #[clap(visible_aliases = &["eval"])]
+    Evaluate(Box<evaluate::EvaluateCommand>),
 
-    #[command(about = "Display all invest masters")]
+    #[command(about = "Display all investment masters")]
     Masters(Box<masters::MastersCommand>),
 }

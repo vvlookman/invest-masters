@@ -9,4 +9,5 @@ pub async fn init() {
         .init();
 }
 
+mod evaluate;
 mod masters;

@@ -22,7 +22,7 @@ async fn main() {
     let mut args: Vec<String> = vec![];
     env::args().for_each(|arg| {
         if let Some(master_stripped) = arg.strip_prefix('@') {
-            args.push("--masters".to_string());
+            args.push("--master".to_string());
             args.push(master_stripped.to_string());
         } else {
             args.push(arg);
@@ -31,7 +31,7 @@ async fn main() {
 
     let cli = Cli::parse_from(args);
     match &cli.command {
-        Commands::Info(cmd) => {
+        Commands::Evaluate(cmd) => {
             cmd.exec().await;
         }
         Commands::Masters(cmd) => {

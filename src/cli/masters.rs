@@ -9,7 +9,7 @@ impl MastersCommand {
     pub async fn exec(&self) {
         let mut table_data: Vec<Vec<String>> = vec![];
 
-        let masters = api::masters::list().await;
+        let masters = api::masters().await;
         for master in masters {
             let name = master.get_message().unwrap_or_default().to_string();
             let keys = master.get_serializations().join("/");
