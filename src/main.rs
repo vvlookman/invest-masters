@@ -34,6 +34,9 @@ async fn main() {
         Commands::Evaluate(cmd) => {
             cmd.exec().await;
         }
+        Commands::Llm(cmd) => {
+            cmd.exec().await;
+        }
         Commands::Masters(cmd) => {
             cmd.exec().await;
         }

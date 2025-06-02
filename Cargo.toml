@@ -4,10 +4,22 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+chrono = "0.4.41"
 clap = { version = "4.5.38", features = ["derive", "unicode"] }
 colored = "3.0.0"
+confy = "1.0.0"
+dashmap = { version = "6.1.0", features = ["rayon"] }
+directories = "6.0.0"
 env_logger = "0.11.8"
+futures = "0.3.31"
+indicatif = { version = "0.17.11", features = ["improved_unicode", "tokio"] }
 log = "0.4.27"
+polars = { version = "0.48.1", features = ["lazy"] }
+rayon = "1.10.0"
+regex = "1.11.1"
+reqwest = { version = "0.12.19", features = ["json", "stream"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 strum = { version = "0.27.1", features = ["derive"] }
 tabled = "0.19.0"
 thiserror = "2.0.12"
@@ -17,6 +29,7 @@ tokio = { version = "1.45.0", features = [
   "sync",
   "time",
 ] }
+url = "2.5.4"
 
 [lints.clippy]
 collapsible_if = "allow"
