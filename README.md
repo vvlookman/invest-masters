@@ -1,3 +1,3 @@
-# invest-masters
+# Investment Masters
 
 AI driven investment masters

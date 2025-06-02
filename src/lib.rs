@@ -1,5 +1,9 @@
 //! # invmst lib
 
+use std::{path::PathBuf, sync::LazyLock};
+
+use directories::ProjectDirs;
+
 pub mod api;
 pub mod error;
 
@@ -9,5 +13,15 @@ pub async fn init() {
         .init();
 }
 
+static DEFAULT_DATA_DIR: LazyLock<PathBuf> =
+    LazyLock::new(|| match ProjectDirs::from("", "", env!("CARGO_PKG_NAME")) {
+        Some(proj_dirs) => proj_dirs.data_dir().to_path_buf(),
+        None => std::env::current_dir()
+            .expect("Unable to get current directory!")
+            .join("data"),
+    });
+
+mod data;
 mod evaluate;
 mod masters;
+mod utils;
