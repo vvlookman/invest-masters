@@ -5,6 +5,12 @@ pub enum InvmstError {
     #[error("[Dataframe Error] {0}")]
     DataframeError(#[from] polars::error::PolarsError),
 
+    #[error("[HTTP Request Error] {0}")]
+    HttpRequestError(#[from] reqwest::Error),
+
+    #[error("[HTTP Status Error] {0}")]
+    HttpStatusError(String),
+
     #[error("[Invalid] {1}")]
     Invalid(&'static str, String),
 
@@ -16,4 +22,7 @@ pub enum InvmstError {
 
     #[error("[Required] {1}")]
     Required(&'static str, String),
+
+    #[error("[URL Parse Error] {0}")]
+    UrlParseError(#[from] url::ParseError),
 }
