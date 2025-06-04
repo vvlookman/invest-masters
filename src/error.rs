@@ -23,6 +23,9 @@ pub enum InvmstError {
     #[error("[Required] {1}")]
     Required(&'static str, String),
 
+    #[error("[Serde JSON Error] {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
+
     #[error("[URL Parse Error] {0}")]
     UrlParseError(#[from] url::ParseError),
 }

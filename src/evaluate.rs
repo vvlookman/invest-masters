@@ -1,14 +1,14 @@
-use std::{fs::read_dir, path::Path, str::FromStr};
+use std::{fs::create_dir_all, path::Path, str::FromStr};
 
 use dashmap::DashMap;
 use strum::IntoEnumIterator;
 
 use crate::{
-    DEFAULT_DATA_DIR,
+    APP_DATA_DIR,
     data::daily::{Daily, DailyData},
+    ds,
     error::{InvmstError, InvmstResult},
     masters::Master,
-    utils,
 };
 
 pub struct EvaluateOptions {
@@ -17,12 +17,17 @@ pub struct EvaluateOptions {
 }
 
 pub async fn run(data_dir: Option<&Path>, options: &EvaluateOptions) -> InvmstResult<()> {
-    let data_dir = data_dir.unwrap_or(&DEFAULT_DATA_DIR);
-    if !data_dir.is_dir() {
-        return Err(InvmstError::Invalid(
-            "DATA_DIR_INVALID",
-            format!("{data_dir:?} is not a directory"),
-        ));
+    let data_dir = data_dir.unwrap_or(&APP_DATA_DIR);
+    if data_dir.exists() {
+        if !data_dir.is_dir() {
+            return Err(InvmstError::Invalid(
+                "DATA_DIR_IS_NOT_DIR",
+                format!("'{data_dir:?}' is not a directory"),
+            ));
+        }
+    } else {
+        create_dir_all(data_dir)
+            .unwrap_or_else(|_| panic!("Unable to create directory '{data_dir:?}'"));
     }
 
     let ticker_prices: DashMap<String, DailyData> = DashMap::new();
@@ -33,19 +38,10 @@ pub async fn run(data_dir: Option<&Path>, options: &EvaluateOptions) -> InvmstRe
         ));
     } else {
         for ticker in &options.tickers {
-            if let Ok(entries) = read_dir(data_dir) {
-                for entry in entries {
-                    let entry_path = entry?.path();
-                    let filename = utils::fs::extract_filename_from_path(&entry_path);
-                    if filename.starts_with(ticker) {
-                        let price_data = DailyData::from_csv(&entry_path, "日期")?;
-                        println!("{:?}", price_data.get_date_max());
-                        println!("{:?}", price_data.get_date_min());
-                        ticker_prices.insert(ticker.to_string(), price_data);
-                        break;
-                    }
-                }
-            }
+            let price_data = ds::fetch_daily_price_data(ticker).await?;
+            println!("{:?}", price_data.get_date_max());
+            println!("{:?}", price_data.get_date_min());
+            ticker_prices.insert(ticker.to_string(), price_data);
         }
     }
     println!("{ticker_prices:?}");

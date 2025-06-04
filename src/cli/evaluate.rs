@@ -8,7 +8,7 @@ pub struct EvaluateCommand {
     #[arg(
         short = 'd',
         long = "data-dir",
-        help = "Data directory, use the default data directory if not specified"
+        help = "Data directory, use the app data directory if not specified"
     )]
     data_dir: Option<PathBuf>,
 
@@ -22,7 +22,7 @@ pub struct EvaluateCommand {
     #[arg(
         short = 't',
         long = "ticker",
-        help = "Ticker to evaluate, e.g. -t AAPL -t MSFT"
+        help = "Ticker to evaluate, e.g. -t 000333 -t 600900"
     )]
     tickers: Vec<String>,
 }
