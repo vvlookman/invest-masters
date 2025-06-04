@@ -2,6 +2,9 @@ pub type InvmstResult<T> = Result<T, InvmstError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum InvmstError {
+    #[error("[Concurrent Error] {0}")]
+    ConcurrentError(#[from] ::tokio::task::JoinError),
+
     #[error("[Dataframe Error] {0}")]
     DataframeError(#[from] polars::error::PolarsError),
 

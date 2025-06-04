@@ -1,12 +1,10 @@
-use std::{fs::create_dir_all, path::Path, str::FromStr};
+use std::{collections::HashMap, fs::create_dir_all, path::Path, str::FromStr};
 
-use dashmap::DashMap;
 use strum::IntoEnumIterator;
+use tokio::task::JoinHandle;
 
 use crate::{
-    APP_DATA_DIR,
-    data::daily::{Daily, DailyData},
-    ds,
+    APP_DATA_DIR, ds,
     error::{InvmstError, InvmstResult},
     masters::Master,
 };
@@ -30,21 +28,31 @@ pub async fn run(data_dir: Option<&Path>, options: &EvaluateOptions) -> InvmstRe
             .unwrap_or_else(|_| panic!("Unable to create directory '{data_dir:?}'"));
     }
 
-    let ticker_prices: DashMap<String, DailyData> = DashMap::new();
+    let mut metrics_map: HashMap<String, ds::StockMetrics> = HashMap::new();
     if options.tickers.is_empty() {
         return Err(InvmstError::Required(
             "TICKER_REQUIRED",
             "No ticker is specified".to_string(),
         ));
     } else {
+        let mut handles: HashMap<String, JoinHandle<InvmstResult<ds::StockMetrics>>> =
+            HashMap::new();
+
         for ticker in &options.tickers {
-            let price_data = ds::fetch_daily_price_data(ticker).await?;
-            println!("{:?}", price_data.get_date_max());
-            println!("{:?}", price_data.get_date_min());
-            ticker_prices.insert(ticker.to_string(), price_data);
+            let ticker = ticker.clone();
+
+            handles.insert(
+                ticker.clone(),
+                tokio::spawn(async move { ds::stock_metrics(&ticker).await }),
+            );
+        }
+
+        for (ticker, handle) in handles {
+            let metrics = handle.await??;
+            metrics_map.insert(ticker, metrics);
         }
     }
-    println!("{ticker_prices:?}");
+    println!("{metrics_map:?}");
 
     let mut masters: Vec<Master> = vec![];
     if options.masters.is_empty() {
@@ -65,7 +73,6 @@ pub async fn run(data_dir: Option<&Path>, options: &EvaluateOptions) -> InvmstRe
             }
         }
     }
-
     println!("{masters:?}");
 
     Ok(())

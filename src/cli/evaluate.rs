@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
 use colored::Colorize;
+use indicatif::{ProgressBar, ProgressStyle};
 use invmst::{api, error::InvmstError};
+use tokio::time::Duration;
 
 #[derive(clap::Args)]
 pub struct EvaluateCommand {
@@ -34,15 +36,22 @@ impl EvaluateCommand {
             tickers: self.tickers.clone(),
         };
 
+        let spinner = ProgressBar::new_spinner();
+        spinner
+            .set_style(ProgressStyle::with_template("{msg} {spinner:.cyan} [{elapsed}]").unwrap());
+        spinner.enable_steady_tick(Duration::from_millis(100));
+
         match api::evaluate(self.data_dir.as_deref(), &options).await {
-            Ok(_) => {}
+            Ok(_) => {
+                spinner.finish_with_message(format!("{}", "success".green()));
+            }
             Err(err) => {
-                println!("{}", err.to_string().red());
+                spinner.finish_with_message(format!("{}", err.to_string().red()));
 
                 if let InvmstError::NotExists(code, _) = err {
                     if code == "MASTER_NOT_EXISTS" {
                         println!(
-                            "[i] Run `{}` command to get master list",
+                            "[I] Run `{}` command to get master list",
                             "invmst masters".green()
                         );
                     }
