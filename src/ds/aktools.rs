@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use serde_json::Value;
+
 use crate::{
     error::InvmstResult,
     utils::net::{http_get, join_url},
@@ -19,7 +21,19 @@ pub async fn call_public_api(
     let mut query = HashMap::new();
     if let Some(params) = params.as_object() {
         for (k, v) in params.iter() {
-            query.insert(k.to_string(), v.to_string());
+            let s = match v {
+                Value::Bool(b) => {
+                    if *b {
+                        "true".to_string()
+                    } else {
+                        "false".to_string()
+                    }
+                }
+                Value::Number(n) => n.to_string(),
+                Value::String(s) => s.to_string(),
+                _ => "".to_string(),
+            };
+            query.insert(k.to_string(), s);
         }
     }
 

@@ -14,10 +14,10 @@ pub struct EvaluateOptions {
 }
 
 pub async fn run(ticker: &str, options: &EvaluateOptions) -> InvmstResult<()> {
-    let ticker = Ticker::from(ticker);
+    let ticker = Ticker::from_str(ticker)?;
     println!("{ticker:?}");
 
-    let stock_metrics = ds::get_stock_metrics(&ticker).await?;
+    let stock_metrics = ds::get_stock_metrics(&ticker, None).await?;
     println!("{stock_metrics:?}");
 
     let mut masters: Vec<Master> = vec![];

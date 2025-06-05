@@ -1,19 +1,24 @@
+use std::str::FromStr;
+
+use crate::error::InvmstError;
+
 #[derive(Debug)]
 pub struct Ticker {
-    pub exchange: Option<String>,
+    pub exchange: String,
     pub symbol: String,
 }
 
-impl From<&str> for Ticker {
-    fn from(s: &str) -> Self {
+impl FromStr for Ticker {
+    type Err = InvmstError;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
         let s = s.trim();
 
         let parts: Vec<_> = s.splitn(2, ':').collect();
         if parts.len() == 2 {
-            Self {
-                exchange: Some(parts[0].trim().to_uppercase().to_string()),
+            Ok(Self {
+                exchange: parts[0].trim().to_uppercase().to_string(),
                 symbol: parts[1].trim().to_uppercase().to_string(),
-            }
+            })
         } else {
             let exchange = if s.starts_with("600")
                 || s.starts_with("601")
@@ -27,9 +32,16 @@ impl From<&str> for Ticker {
                 None
             };
 
-            Self {
-                exchange: exchange.map(|s| s.to_string()),
-                symbol: s.to_uppercase().to_string(),
+            if let Some(exchange) = exchange {
+                Ok(Self {
+                    exchange: exchange.to_string(),
+                    symbol: s.to_uppercase().to_string(),
+                })
+            } else {
+                Err(InvmstError::Invalid(
+                    "NO_EXCHANGE",
+                    format!("Unable to determine exchange of '{s}'"),
+                ))
             }
         }
     }
