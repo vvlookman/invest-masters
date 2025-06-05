@@ -7,12 +7,6 @@ use crate::{
     utils,
 };
 
-pub trait Daily {
-    fn get_date_max(&self) -> Option<NaiveDate>;
-    fn get_date_min(&self) -> Option<NaiveDate>;
-    fn has_date(&self, date: &NaiveDate) -> bool;
-}
-
 #[derive(Debug)]
 pub struct DailyData {
     df: DataFrame,
@@ -109,9 +103,7 @@ impl DailyData {
             ))
         }
     }
-}
 
-impl Daily for DailyData {
     fn get_date_max(&self) -> Option<NaiveDate> {
         if let Ok(df) = self
             .df

@@ -24,5 +24,6 @@ static APP_DATA_DIR: LazyLock<PathBuf> =
 mod data;
 mod ds;
 mod evaluate;
-mod masters;
+mod master;
+mod ticker;
 mod utils;
