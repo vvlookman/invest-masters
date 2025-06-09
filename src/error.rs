@@ -20,6 +20,9 @@ pub enum InvmstError {
     #[error("[IO Error] {0}")]
     IoError(#[from] std::io::Error),
 
+    #[error("[No Data] {1}")]
+    NoData(&'static str, String),
+
     #[error("[Not Exists] {1}")]
     NotExists(&'static str, String),
 

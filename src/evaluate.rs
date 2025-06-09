@@ -1,6 +1,7 @@
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use strum::IntoEnumIterator;
+use tokio::task::JoinHandle;
 
 use crate::{
     ds,
@@ -19,6 +20,8 @@ pub async fn run(ticker: &str, options: &EvaluateOptions) -> InvmstResult<()> {
 
     let stock_metrics = ds::get_stock_metrics(&ticker, None).await?;
     println!("{stock_metrics:?}");
+
+    let trailing_stock_metrics = vec![stock_metrics];
 
     let mut masters: Vec<Master> = vec![];
     if options.masters.is_empty() {
@@ -40,6 +43,23 @@ pub async fn run(ticker: &str, options: &EvaluateOptions) -> InvmstResult<()> {
         }
     }
     println!("{masters:?}");
+
+    let mut handles: HashMap<Master, JoinHandle<InvmstResult<()>>> = HashMap::new();
+    for master in masters {
+        let ticker = ticker.clone();
+        let trailing_stock_metrics = trailing_stock_metrics.clone();
+
+        let handle = tokio::spawn(async move {
+            let _ = master.evaluate(&ticker, &trailing_stock_metrics).await;
+            Ok(())
+        });
+        handles.insert(master, handle);
+    }
+
+    for (master, handle) in handles {
+        let result = handle.await?;
+        println!("[{master:?}] {result:?}");
+    }
 
     Ok(())
 }

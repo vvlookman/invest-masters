@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::error::InvmstError;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Ticker {
     pub exchange: String,
     pub symbol: String,

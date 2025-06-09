@@ -8,7 +8,7 @@ use crate::{
     utils::datetime::{FiscalQuarter, Quarter},
 };
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct FinancialSummary {
     pub asset_turnover: Option<f64>,
     pub book_value_per_share: Option<f64>,
@@ -83,13 +83,16 @@ pub async fn fetch_financial_summary(
                                 result.cash_ratio = item[&quarter_key].as_f64();
                             }
                             "成本费用利润率" => {
-                                result.cost_of_profit = item[&quarter_key].as_f64();
+                                result.cost_of_profit =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "销售成本率" => {
-                                result.cost_of_revenue = item[&quarter_key].as_f64();
+                                result.cost_of_revenue =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "成本费用率" => {
-                                result.cost_to_revenue = item[&quarter_key].as_f64();
+                                result.cost_to_revenue =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "流动比率" => {
                                 result.current_ratio = item[&quarter_key].as_f64();
@@ -104,10 +107,12 @@ pub async fn fetch_financial_summary(
                                 result.days_sales_outstanding = item[&quarter_key].as_f64();
                             }
                             "资产负债率" => {
-                                result.debt_to_assets = item[&quarter_key].as_f64();
+                                result.debt_to_assets =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "产权比率" => {
-                                result.debt_to_equity = item[&quarter_key].as_f64();
+                                result.debt_to_equity =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "基本每股收益" => {
                                 result.earnings_per_share = item[&quarter_key].as_f64();
@@ -119,16 +124,17 @@ pub async fn fetch_financial_summary(
                                 result.goodwill = item[&quarter_key].as_f64();
                             }
                             "毛利率" => {
-                                result.gross_margin = item[&quarter_key].as_f64();
+                                result.gross_margin =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "存货周转率" => {
                                 result.inventory_turnover = item[&quarter_key].as_f64();
                             }
-                            "净资产" => {
+                            "股东权益合计(净资产)" => {
                                 result.net_assets = item[&quarter_key].as_f64();
                             }
                             "销售净利率" => {
-                                result.net_margin = item[&quarter_key].as_f64();
+                                result.net_margin = item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "净利润" => {
                                 result.net_profit = item[&quarter_key].as_f64();
@@ -140,7 +146,8 @@ pub async fn fetch_financial_summary(
                                 result.operating_costs = item[&quarter_key].as_f64();
                             }
                             "营业利润率" => {
-                                result.operating_margin = item[&quarter_key].as_f64();
+                                result.operating_margin =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "营业总收入" => {
                                 result.operating_revenue = item[&quarter_key].as_f64();
@@ -152,16 +159,20 @@ pub async fn fetch_financial_summary(
                                 result.receivables_turnover = item[&quarter_key].as_f64();
                             }
                             "总资产报酬率(ROA)" => {
-                                result.return_on_assets = item[&quarter_key].as_f64();
+                                result.return_on_assets =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "净资产收益率(ROE)" => {
-                                result.return_on_equity = item[&quarter_key].as_f64();
+                                result.return_on_equity =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "投入资本回报率" => {
-                                result.return_on_invested_capital = item[&quarter_key].as_f64();
+                                result.return_on_invested_capital =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             "营业总收入增长率" => {
-                                result.revenue_growth = item[&quarter_key].as_f64();
+                                result.revenue_growth =
+                                    item[&quarter_key].as_f64().map(|v| v / 100.0);
                             }
                             _ => {}
                         }

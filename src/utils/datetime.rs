@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use chrono::{Datelike, NaiveDate};
 
-#[derive(Debug, strum::Display)]
+#[derive(Clone, Debug, strum::Display)]
 pub enum Quarter {
     Q1,
     Q2,
@@ -10,6 +10,7 @@ pub enum Quarter {
     Q4,
 }
 
+#[derive(Clone, Debug)]
 pub struct FiscalQuarter {
     pub year: i32,
     pub quarter: Quarter,
