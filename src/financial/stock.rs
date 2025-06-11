@@ -1,54 +1,42 @@
 use serde_json::json;
 
 use crate::{
-    data::daily::DailyData,
+    data::{daily::*, stock::*},
     ds::aktools,
-    error::{InvmstError, InvmstResult},
+    error::*,
     ticker::Ticker,
-    utils::datetime::{FiscalQuarter, Quarter},
+    utils::datetime::*,
 };
 
-#[derive(Clone, Debug, Default)]
-pub struct FinancialSummary {
-    pub asset_turnover: Option<f64>,
-    pub book_value_per_share: Option<f64>,
-    pub cash_ratio: Option<f64>,
-    pub cost_of_profit: Option<f64>,
-    pub cost_of_revenue: Option<f64>,
-    pub cost_to_revenue: Option<f64>,
-    pub current_ratio: Option<f64>,
-    pub days_asset_outstanding: Option<f64>,
-    pub days_inventory_outstanding: Option<f64>,
-    pub days_sales_outstanding: Option<f64>,
-    pub debt_to_assets: Option<f64>,
-    pub debt_to_equity: Option<f64>,
-    pub earnings_per_share: Option<f64>,
-    pub free_cash_flow_per_share: Option<f64>,
-    pub goodwill: Option<f64>,
-    pub gross_margin: Option<f64>,
-    pub inventory_turnover: Option<f64>,
-    pub net_assets: Option<f64>,
-    pub net_margin: Option<f64>,
-    pub net_profit: Option<f64>,
-    pub operating_cash_flow: Option<f64>,
-    pub operating_costs: Option<f64>,
-    pub operating_margin: Option<f64>,
-    pub operating_revenue: Option<f64>,
-    pub quick_ratio: Option<f64>,
-    pub receivables_turnover: Option<f64>,
-    pub return_on_assets: Option<f64>,
-    pub return_on_equity: Option<f64>,
-    pub return_on_invested_capital: Option<f64>,
-    pub revenue_growth: Option<f64>,
-}
-
-pub async fn fetch_financial_summary(
-    ticker: &Ticker,
-    fiscal_quater: &FiscalQuarter,
-) -> InvmstResult<FinancialSummary> {
+pub async fn fetch_stock_daily_price(ticker: &Ticker) -> InvmstResult<DailyData> {
     match ticker.exchange.as_str() {
         "SSE" | "SZSE" => {
-            let mut result = FinancialSummary::default();
+            let json = aktools::call_public_api(
+                "/stock_zh_a_hist",
+                &json!({
+                    "adjust": "hfq",
+                    "period": "daily",
+                    "symbol": ticker.symbol,
+                }),
+            )
+            .await?;
+
+            DailyData::from_json(&json, "日期")
+        }
+        _ => Err(InvmstError::Invalid(
+            "EXCHANGE_NOT_SUPPORTED",
+            format!("Not yet supported exchange '{}'", ticker.exchange),
+        )),
+    }
+}
+
+pub async fn fetch_stock_financial_summary(
+    ticker: &Ticker,
+    fiscal_quater: &FiscalQuarter,
+) -> InvmstResult<StockFinancialSummary> {
+    match ticker.exchange.as_str() {
+        "SSE" | "SZSE" => {
+            let mut result = StockFinancialSummary::default();
 
             {
                 let json = aktools::call_public_api(
@@ -189,20 +177,36 @@ pub async fn fetch_financial_summary(
     }
 }
 
-pub async fn fetch_daily_price_data(ticker: &Ticker) -> InvmstResult<DailyData> {
+pub async fn fetch_stock_info(ticker: &Ticker) -> InvmstResult<StockInfo> {
     match ticker.exchange.as_str() {
         "SSE" | "SZSE" => {
-            let json = aktools::call_public_api(
-                "/stock_zh_a_hist",
-                &json!({
-                    "adjust": "hfq",
-                    "period": "daily",
-                    "symbol": ticker.symbol,
-                }),
-            )
-            .await?;
+            let mut result = StockInfo::default();
 
-            DailyData::from_json(&json, "日期")
+            {
+                let json = aktools::call_public_api(
+                    "/stock_individual_info_em",
+                    &json!({
+                        "symbol": ticker.symbol,
+                    }),
+                )
+                .await?;
+
+                if let Some(array) = json.as_array() {
+                    for item in array {
+                        match item["item"].as_str().unwrap_or_default() {
+                            "股票简称" => {
+                                result.name = item["value"].as_str().map(|v| v.to_string());
+                            }
+                            "行业" => {
+                                result.industry = item["value"].as_str().map(|v| v.to_string());
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+
+            Ok(result)
         }
         _ => Err(InvmstError::Invalid(
             "EXCHANGE_NOT_SUPPORTED",

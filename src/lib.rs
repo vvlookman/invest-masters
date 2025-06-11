@@ -31,6 +31,7 @@ static LLM_CHAT_TEMPERATURE_DEFAULT: f64 = 0.6;
 mod data;
 mod ds;
 mod evaluate;
+mod financial;
 mod llm;
 mod master;
 mod ticker;

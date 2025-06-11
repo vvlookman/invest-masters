@@ -1316,6 +1316,7 @@ dependencies = [
  "log",
  "polars",
  "rayon",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",

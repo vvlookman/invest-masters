@@ -1,13 +1,15 @@
 use std::{collections::HashMap, str::FromStr};
 
+use log::debug;
 use strum::IntoEnumIterator;
 use tokio::task::JoinHandle;
 
 use crate::{
-    ds,
-    error::{InvmstError, InvmstResult},
-    master::Master,
+    error::*,
+    financial::*,
+    master::{Master, MasterAnalysis},
     ticker::Ticker,
+    utils,
 };
 
 pub struct EvaluateOptions {
@@ -16,12 +18,20 @@ pub struct EvaluateOptions {
 
 pub async fn run(ticker: &str, options: &EvaluateOptions) -> InvmstResult<()> {
     let ticker = Ticker::from_str(ticker)?;
-    println!("{ticker:?}");
+    debug!("{ticker:?}");
 
-    let stock_metrics = ds::get_stock_metrics(&ticker, None).await?;
-    println!("{stock_metrics:?}");
+    let stock_info = get_stock_info(&ticker).await?;
+    debug!("{stock_info:?}");
 
-    let trailing_stock_metrics = vec![stock_metrics];
+    let mut trailing_stock_metrics = vec![];
+    let mut fiscal_quarter = utils::datetime::prev_fiscal_quarter(None);
+    for _ in 0..4 {
+        let stock_metrics = get_fiscal_stock_metrics(&ticker, Some(fiscal_quarter.clone())).await?;
+        trailing_stock_metrics.push(stock_metrics);
+
+        fiscal_quarter = fiscal_quarter.prev();
+    }
+    debug!("{trailing_stock_metrics:?}");
 
     let mut masters: Vec<Master> = vec![];
     if options.masters.is_empty() {
@@ -42,16 +52,17 @@ pub async fn run(ticker: &str, options: &EvaluateOptions) -> InvmstResult<()> {
             }
         }
     }
-    println!("{masters:?}");
 
-    let mut handles: HashMap<Master, JoinHandle<InvmstResult<()>>> = HashMap::new();
+    let mut handles: HashMap<Master, JoinHandle<InvmstResult<MasterAnalysis>>> = HashMap::new();
     for master in masters {
         let ticker = ticker.clone();
+        let stock_info = stock_info.clone();
         let trailing_stock_metrics = trailing_stock_metrics.clone();
 
         let handle = tokio::spawn(async move {
-            let _ = master.evaluate(&ticker, &trailing_stock_metrics).await;
-            Ok(())
+            master
+                .analyze(&ticker, &stock_info, &trailing_stock_metrics)
+                .await
         });
         handles.insert(master, handle);
     }

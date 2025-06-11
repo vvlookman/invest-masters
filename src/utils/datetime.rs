@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, Local, NaiveDate};
 
-#[derive(Clone, Debug, strum::Display)]
+#[derive(Clone, Debug, PartialEq, strum::Display)]
 pub enum Quarter {
     Q1,
     Q2,
@@ -27,7 +27,8 @@ pub fn days_after_epoch(date: &NaiveDate) -> Option<i32> {
     Some(days)
 }
 
-pub fn prev_fiscal_quarter(date: &NaiveDate) -> FiscalQuarter {
+pub fn prev_fiscal_quarter(date: Option<NaiveDate>) -> FiscalQuarter {
+    let date = date.unwrap_or(Local::now().date_naive());
     if date.month() < 4 {
         FiscalQuarter::new(date.year() - 1, Quarter::Q4)
     } else if date.month() < 7 {
@@ -44,6 +45,22 @@ static EPOCH: NaiveDate = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
 impl FiscalQuarter {
     pub fn new(year: i32, quarter: Quarter) -> Self {
         Self { year, quarter }
+    }
+
+    pub fn prev(&self) -> Self {
+        Self {
+            year: if self.quarter == Quarter::Q1 {
+                self.year - 1
+            } else {
+                self.year
+            },
+            quarter: match self.quarter {
+                Quarter::Q1 => Quarter::Q4,
+                Quarter::Q2 => Quarter::Q1,
+                Quarter::Q3 => Quarter::Q2,
+                Quarter::Q4 => Quarter::Q3,
+            },
+        }
     }
 }
 

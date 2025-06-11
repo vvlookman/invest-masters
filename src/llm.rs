@@ -83,32 +83,42 @@ pub async fn chat_completion_stream(
 }
 
 pub async fn config_chat(protocol: &str, options: &HashMap<String, String>) -> InvmstResult<()> {
-    for key in ["base_url", "api_key", "model"] {
-        if options
-            .get(key)
-            .map_or("", |s| s.as_str())
-            .trim()
-            .is_empty()
-        {
-            return Err(InvmstError::Required(
-                "OPTION_REQUIRED",
-                format!("Required option '{key}' is missing"),
-            ));
-        }
+    let mut cfg: Config = confy::load_path(&*CHAT_CONFIG_PATH).unwrap_or(Config::default());
+
+    cfg.protocol = Protocol::from_str(protocol)?;
+
+    if let Some(base_url) = options.get("base_url") {
+        cfg.base_url = base_url.trim().to_string();
     }
 
-    let cfg = Config {
-        protocol: Protocol::from_str(protocol)?,
-        base_url: options
-            .get("base_url")
-            .map_or("", |s| s.as_str())
-            .to_string(),
-        api_key: options
-            .get("api_key")
-            .map_or("", |s| s.as_str())
-            .to_string(),
-        model: options.get("model").map_or("", |s| s.as_str()).to_string(),
-    };
+    if let Some(api_key) = options.get("api_key") {
+        cfg.api_key = api_key.trim().to_string();
+    }
+
+    if let Some(model) = options.get("model") {
+        cfg.model = model.trim().to_string();
+    }
+
+    if cfg.base_url.is_empty() {
+        return Err(InvmstError::Required(
+            "OPTION_REQUIRED",
+            "Required option 'base_url' is missing".to_string(),
+        ));
+    }
+
+    if cfg.api_key.is_empty() {
+        return Err(InvmstError::Required(
+            "OPTION_REQUIRED",
+            "Required option 'api_key' is missing".to_string(),
+        ));
+    }
+
+    if cfg.model.is_empty() {
+        return Err(InvmstError::Required(
+            "OPTION_REQUIRED",
+            "Required option 'model' is missing".to_string(),
+        ));
+    }
 
     confy::store_path(&*CHAT_CONFIG_PATH, &cfg)?;
 
