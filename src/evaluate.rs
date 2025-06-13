@@ -55,15 +55,11 @@ pub async fn run(ticker: &str, options: &EvaluateOptions) -> InvmstResult<()> {
 
     let mut handles: HashMap<Master, JoinHandle<InvmstResult<MasterAnalysis>>> = HashMap::new();
     for master in masters {
-        let ticker = ticker.clone();
         let stock_info = stock_info.clone();
         let trailing_stock_metrics = trailing_stock_metrics.clone();
 
-        let handle = tokio::spawn(async move {
-            master
-                .analyze(&ticker, &stock_info, &trailing_stock_metrics)
-                .await
-        });
+        let handle =
+            tokio::spawn(async move { master.analyze(&stock_info, &trailing_stock_metrics).await });
         handles.insert(master, handle);
     }
 

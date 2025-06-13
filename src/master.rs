@@ -3,7 +3,7 @@ use std::str::FromStr;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::{data::stock::*, error::*, financial::Signal, ticker::Ticker};
+use crate::{data::stock::*, error::*, financial::Prospect, ticker::Ticker};
 
 #[derive(
     Clone,
@@ -37,14 +37,13 @@ pub enum Master {
 impl Master {
     pub async fn analyze(
         &self,
-        ticker: &Ticker,
         stock_info: &StockInfo,
         trailing_stock_metrics: &[FiscalStockMetrics],
     ) -> InvmstResult<MasterAnalysis> {
         match self {
             Master::BenjaminGraham => todo!(),
             Master::WarrenBuffett => {
-                warren_buffett::analyze(ticker, stock_info, trailing_stock_metrics).await
+                warren_buffett::analyze(stock_info, trailing_stock_metrics).await
             }
         }
     }
@@ -52,7 +51,7 @@ impl Master {
 
 #[derive(Debug)]
 pub struct MasterAnalysis {
-    pub signal: Signal,
+    pub prospect: Prospect,
     pub rating: u64,
     pub explanation: String,
 }
@@ -61,11 +60,11 @@ impl MasterAnalysis {
     pub fn from_json(json_str: &str) -> InvmstResult<Self> {
         let json: Value = serde_json::from_str(json_str)?;
 
-        let signal_str = json["signal"].as_str().ok_or(InvmstError::Required(
-            "SIGNAL_REQUIRED",
-            "Missing signal".to_string(),
+        let prospect_str = json["prospect"].as_str().ok_or(InvmstError::Required(
+            "PROSPECT_REQUIRED",
+            "Missing prospect".to_string(),
         ))?;
-        let signal = Signal::from_str(signal_str)?;
+        let prospect = Prospect::from_str(prospect_str)?;
 
         let rating: u64 = json["rating"].as_u64().ok_or(InvmstError::Required(
             "RATING_REQUIRED",
@@ -81,7 +80,7 @@ impl MasterAnalysis {
             .to_string();
 
         Ok(Self {
-            signal,
+            prospect,
             rating,
             explanation,
         })
@@ -94,7 +93,7 @@ static MASTER_ANALYSIS_JSON_PROMPT: &str = r#"
 返回的 JSON 格式示例如下：
 ```
 {
-    "signal": "Buy" | "Sell" | "Hold",
+    "prospect": "Bullish" | "Bearish" | "Neutral",
     "rating": 评分为0到100之间的整数,
     "explanation": "详细阐述分析过程"
 }
@@ -119,7 +118,7 @@ mod tests {
     fn test_master_analysis() {
         let json_str = r#"
 {
-    "signal": "sell",
+    "prospect": "bearish",
     "rating": 20,
     "explanation": "test"
 }
@@ -127,7 +126,7 @@ mod tests {
 
         match MasterAnalysis::from_json(&json_str) {
             Ok(analysis) => {
-                assert_eq!(analysis.signal, Signal::Sell);
+                assert_eq!(analysis.prospect, Prospect::Bearish);
                 assert_eq!(analysis.rating, 20);
                 assert_eq!(analysis.explanation, "test");
             }

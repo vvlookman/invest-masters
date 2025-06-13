@@ -10,12 +10,10 @@ use crate::{
         AnalysisDraft, FiscalStockMetrics, InvmstResult, MASTER_ANALYSIS_JSON_PROMPT,
         MasterAnalysis,
     },
-    ticker::Ticker,
     utils,
 };
 
 pub async fn analyze(
-    _ticker: &Ticker,
     stock_info: &StockInfo,
     trailing_stock_metrics: &[FiscalStockMetrics],
 ) -> InvmstResult<MasterAnalysis> {
@@ -26,13 +24,15 @@ pub async fn analyze(
         ));
     }
 
-    let fundamentals = analyze_fundamentals(trailing_stock_metrics).await?;
-    let consistency = analyze_consistency(trailing_stock_metrics).await?;
+    let analysis_fundamentals = analyze_fundamentals(trailing_stock_metrics).await?;
+    let analysis_consistency = analyze_consistency(trailing_stock_metrics).await?;
+    let analysis_moat = analyze_moat(trailing_stock_metrics).await?;
 
     let data_json = json!({
         "basic_information": stock_info,
-        "fundamentals": fundamentals,
-        "consistency": consistency,
+        "analysis_fundamentals": analysis_fundamentals,
+        "analysis_consistency": analysis_consistency,
+        "analysis_moat": analysis_moat,
     });
     debug!("AnalyzeData {data_json}");
 
@@ -118,7 +118,7 @@ async fn analyze_consistency(
     };
 
     if let Some(score) = score {
-        if score > 0.9 {
+        if score > 0.8 {
             assessments.push("Consistent net profit growth".to_string());
         } else {
             assessments.push("Inconsistent net profit growth".to_string());
@@ -199,6 +199,45 @@ async fn analyze_fundamentals(
     } else {
         None
     };
+
+    if let Some(score) = score {
+        if score > 0.8 {
+            assessments.push("Have good fundamentals".to_string());
+        } else {
+            assessments.push("Not have good fundamentals".to_string());
+        }
+    }
+
+    Ok(AnalysisDraft { score, assessments })
+}
+
+async fn analyze_moat(
+    trailing_stock_metrics: &[FiscalStockMetrics],
+) -> InvmstResult<AnalysisDraft> {
+    if trailing_stock_metrics.len() < 4 {
+        return Ok(AnalysisDraft {
+            score: None,
+            assessments: vec!["Insufficient historical data for consistency analysis".to_string()],
+        });
+    }
+
+    let mut sum_scores: f64 = 0.0;
+    let mut sum_weights: f64 = 0.0;
+    let mut assessments: Vec<String> = vec![];
+
+    let score = if sum_weights > 0.0 {
+        Some(sum_scores / sum_weights)
+    } else {
+        None
+    };
+
+    if let Some(score) = score {
+        if score > 0.8 {
+            assessments.push("Have a durable competitive advantage (moat)".to_string());
+        } else {
+            assessments.push("Not have a durable competitive advantage (moat)".to_string());
+        }
+    }
 
     Ok(AnalysisDraft { score, assessments })
 }

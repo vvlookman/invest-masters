@@ -4,10 +4,10 @@ pub mod stock;
 
 #[derive(Debug, PartialEq, strum::Display, strum::EnumIter, strum::EnumString)]
 #[strum(ascii_case_insensitive)]
-pub enum Signal {
-    Buy,
-    Sell,
-    Hold,
+pub enum Prospect {
+    Bullish,
+    Bearish,
+    Neutral,
 }
 
 pub async fn get_stock_info(ticker: &Ticker) -> InvmstResult<StockInfo> {
