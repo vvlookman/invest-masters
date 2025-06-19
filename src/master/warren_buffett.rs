@@ -8,7 +8,7 @@ use crate::{
     llm::{ChatCompletionOptions, ChatMessage, Role},
     master::{
         AnalysisDraft, InvmstResult, MASTER_ANALYSIS_JSON_PROMPT, MasterAnalysis,
-        MasterAnalyzeOptions, StockEvents, StockFiscalMetrics,
+        MasterAnalyzeOptions, StockDailyData, StockEvents, StockFiscalMetricset,
     },
     utils,
 };
@@ -16,19 +16,20 @@ use crate::{
 pub async fn analyze(
     stock_info: &StockInfo,
     stock_events: &StockEvents,
-    stock_metrics: &[StockFiscalMetrics],
+    _stock_daily_data: &StockDailyData,
+    stock_fiscal_metricsets: &[StockFiscalMetricset],
     options: &MasterAnalyzeOptions,
 ) -> InvmstResult<MasterAnalysis> {
-    if stock_metrics.is_empty() {
+    if stock_fiscal_metricsets.is_empty() {
         return Err(InvmstError::NoData(
             "NO_STOCK_METRICS",
             "No stock metrics data".to_string(),
         ));
     }
 
-    let analysis_fundamentals = analyze_fundamentals(stock_metrics).await?;
-    let analysis_consistency = analyze_consistency(stock_metrics).await?;
-    let analysis_moat = analyze_moat(stock_metrics).await?;
+    let analysis_fundamentals = analyze_fundamentals(stock_fiscal_metricsets).await?;
+    let analysis_consistency = analyze_consistency(stock_fiscal_metricsets).await?;
+    let analysis_moat = analyze_moat(stock_fiscal_metricsets).await?;
     let analysis_management = analyze_management(stock_events, options.backward_days).await?;
 
     let data_json = json!({
@@ -38,19 +39,11 @@ pub async fn analyze(
         "analysis_moat": analysis_moat,
         "analysis_management": analysis_management,
     });
-    debug!("AnalyzeData {data_json}");
+    debug!("[Warren Buffett Data] {data_json}");
 
     let prompt = format!(
         r#"
-这是我的分析步骤：
-1. 该投资是否属于我的能力圈范围及原因
-2. 对企业竞争护城河的评估
-3. 管理层质量与资本配置能力
-4. 财务健康状况与盈利稳定性
-5. 相对于内在价值的估值水平
-6. 长期前景及任何风险警示
-
-基于下面的数据，按上面的步骤分析投资对象，结果以标准的 JSON 对象格式返回：
+基于下面的数据，使用我的投资分析方法评估投资对象，结果以标准的 JSON 对象格式返回：
 ```
 {data_json}
 ```
@@ -81,8 +74,10 @@ pub async fn analyze(
     Ok(analysis)
 }
 
-async fn analyze_consistency(stock_metrics: &[StockFiscalMetrics]) -> InvmstResult<AnalysisDraft> {
-    if stock_metrics.len() < 4 {
+async fn analyze_consistency(
+    stock_fiscal_metricsets: &[StockFiscalMetricset],
+) -> InvmstResult<AnalysisDraft> {
+    if stock_fiscal_metricsets.len() < 4 {
         return Ok(AnalysisDraft {
             score: None,
             assessments: vec!["Insufficient historical data for consistency analysis".to_string()],
@@ -96,10 +91,13 @@ async fn analyze_consistency(stock_metrics: &[StockFiscalMetrics]) -> InvmstResu
     // 净利润持续增长
     {
         let mut growth_rates: Vec<f64> = vec![];
-        for i in 0..stock_metrics.len() - 1 {
+        for i in 0..stock_fiscal_metricsets.len() - 1 {
             if let (Some(net_profit_current), Some(net_profit_prev)) = (
-                stock_metrics[i].1.financial_summary.net_profit,
-                stock_metrics[i + 1].1.financial_summary.net_profit,
+                stock_fiscal_metricsets[i].1.financial_summary.net_profit,
+                stock_fiscal_metricsets[i + 1]
+                    .1
+                    .financial_summary
+                    .net_profit,
             ) {
                 growth_rates.push((net_profit_current - net_profit_prev) / net_profit_prev);
             }
@@ -123,10 +121,13 @@ async fn analyze_consistency(stock_metrics: &[StockFiscalMetrics]) -> InvmstResu
     // 每股净资产持续增长
     {
         let mut growth_rates: Vec<f64> = vec![];
-        for i in 0..stock_metrics.len() - 1 {
+        for i in 0..stock_fiscal_metricsets.len() - 1 {
             if let (Some(book_value_per_share_current), Some(book_value_per_share_prev)) = (
-                stock_metrics[i].1.financial_summary.book_value_per_share,
-                stock_metrics[i + 1]
+                stock_fiscal_metricsets[i]
+                    .1
+                    .financial_summary
+                    .book_value_per_share,
+                stock_fiscal_metricsets[i + 1]
                     .1
                     .financial_summary
                     .book_value_per_share,
@@ -170,13 +171,22 @@ async fn analyze_consistency(stock_metrics: &[StockFiscalMetrics]) -> InvmstResu
     Ok(AnalysisDraft { score, assessments })
 }
 
-async fn analyze_fundamentals(stock_metrics: &[StockFiscalMetrics]) -> InvmstResult<AnalysisDraft> {
+async fn analyze_fundamentals(
+    stock_fiscal_metricsets: &[StockFiscalMetricset],
+) -> InvmstResult<AnalysisDraft> {
+    if stock_fiscal_metricsets.len() < 1 {
+        return Ok(AnalysisDraft {
+            score: None,
+            assessments: vec!["Insufficient historical data forfundamentals analysis".to_string()],
+        });
+    }
+
     let mut sum_scores: f64 = 0.0;
     let mut sum_weights: f64 = 0.0;
     let mut assessments: Vec<String> = vec![];
 
-    let latest_stock_metrics = stock_metrics.first().unwrap();
-    let (_, stock_metrics) = latest_stock_metrics;
+    let latest_stock_fiscal_metricsets = stock_fiscal_metricsets.first().unwrap();
+    let (_, stock_metrics) = latest_stock_fiscal_metricsets;
 
     // 资本回报率
     if let Some(return_on_equity) = stock_metrics.financial_summary.return_on_equity {
@@ -255,7 +265,7 @@ async fn analyze_management(
     let mut sum_weights: f64 = 0.0;
     let mut assessments: Vec<String> = vec![];
 
-    // 分红
+    // 股息分红
     {
         if backward_days > 180 {
             let weight = 1.0;
@@ -286,26 +296,28 @@ async fn analyze_management(
     Ok(AnalysisDraft { score, assessments })
 }
 
-async fn analyze_moat(stock_metrics: &[StockFiscalMetrics]) -> InvmstResult<AnalysisDraft> {
-    if stock_metrics.len() < 4 {
+async fn analyze_moat(
+    stock_fiscal_metricsets: &[StockFiscalMetricset],
+) -> InvmstResult<AnalysisDraft> {
+    if stock_fiscal_metricsets.len() < 4 {
         return Ok(AnalysisDraft {
             score: None,
             assessments: vec!["Insufficient historical data for moat analysis".to_string()],
         });
     }
 
-    let roes: Vec<f64> = stock_metrics
-        .iter()
-        .filter_map(|(_, metrics)| metrics.financial_summary.return_on_equity.map(|v| v))
-        .collect();
-    let operating_margins: Vec<f64> = stock_metrics
-        .iter()
-        .filter_map(|(_, metrics)| metrics.financial_summary.operating_margin.map(|v| v))
-        .collect();
-
     let mut sum_scores: f64 = 0.0;
     let mut sum_weights: f64 = 0.0;
     let mut assessments: Vec<String> = vec![];
+
+    let roes: Vec<f64> = stock_fiscal_metricsets
+        .iter()
+        .filter_map(|(_, metrics)| metrics.financial_summary.return_on_equity.map(|v| v))
+        .collect();
+    let operating_margins: Vec<f64> = stock_fiscal_metricsets
+        .iter()
+        .filter_map(|(_, metrics)| metrics.financial_summary.operating_margin.map(|v| v))
+        .collect();
 
     // 持续的高资本回报率
     {
@@ -350,7 +362,7 @@ async fn analyze_moat(stock_metrics: &[StockFiscalMetrics]) -> InvmstResult<Anal
 
     // 规模优势（资产周转率）
     {
-        let asset_turnovers: Vec<f64> = stock_metrics
+        let asset_turnovers: Vec<f64> = stock_fiscal_metricsets
             .iter()
             .filter_map(|(_, metrics)| metrics.financial_summary.asset_turnover.map(|v| v))
             .collect();
@@ -431,7 +443,7 @@ static LLM_SYSTEM: &str = r#"
 6. 长期视角：寻找能繁荣数十年的企业。
 7. 定价权：最好的企业可以提价而不流失客户。
 
-**能力圈偏好**
+## 能力圈偏好
 - 拥有强势品牌的消费品（可口可乐、宝洁、沃尔玛、好市多）
 - 商业银行（美国银行、富国银行）
 - 保险业（GEICO、财产意外险）
@@ -439,7 +451,7 @@ static LLM_SYSTEM: &str = r#"
 - 具有护城河的简单工业（UPS、联邦快递、卡特彼勒）
 - 拥有储备和管道的能源公司（雪佛龙，不包括勘探类）
 
-**能力圈回避**
+## 能力圈回避
 - 复杂科技（半导体、软件，苹果例外因其消费生态）
 - 生物科技和制药（过于复杂，监管风险高）
 - 航空业（商品化生意，经济性差）
@@ -449,16 +461,16 @@ static LLM_SYSTEM: &str = r#"
 - 缺乏定价权的重资产生意
 - 投资银行
 
-**评估方法**
+## 评估方法
 1. 能力圈：如果不懂商业模式或行业逻辑，无论潜在回报多高都不投。
 2. 企业质量：是否有护城河？20年后是否依然兴旺？
 3. 管理层：是否维护股东利益？资本配置是否明智？
 4. 财务实力：盈利是否稳定？负债是否低？资本回报率是否强劲？
 5. 估值：是否为优秀企业支付了合理价格？
 
-**评分等级**
+## 评分等级（百分制）
 - 80-100：卓越企业，价格诱人
-- 60-79：护城河良好的企业，估值合理
+- 60-79：良好企业，估值合理
 - 40-59：信号混杂，需更多信息或更优价格
 - 20-39：超出能力圈或基本面存疑
 - 0-19：劣质企业或严重高估

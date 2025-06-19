@@ -1,6 +1,12 @@
 use chrono::{Duration, Local, NaiveDate};
 
-use crate::{data::stock::*, error::*, financial::stock::*, ticker::Ticker, utils::datetime::*};
+use crate::{
+    data::{daily::*, stock::*},
+    error::*,
+    financial::stock::*,
+    ticker::Ticker,
+    utils::datetime::*,
+};
 
 pub mod stock;
 
@@ -10,6 +16,10 @@ pub enum Prospect {
     Bullish,
     Bearish,
     Neutral,
+}
+
+pub async fn get_stock_daily_valuations(ticker: &Ticker) -> InvmstResult<DailyDataset> {
+    fetch_stock_daily_valuations(ticker).await
 }
 
 pub async fn get_stock_events(
@@ -25,14 +35,14 @@ pub async fn get_stock_events(
     Ok(StockEvents { dividends })
 }
 
-pub async fn get_stock_fiscal_metrics(
+pub async fn get_stock_fiscal_metricset(
     ticker: &Ticker,
     quater: Option<FiscalQuarter>,
-) -> InvmstResult<StockFiscalMetrics> {
+) -> InvmstResult<StockFiscalMetricset> {
     let fiscal_quater = quater.unwrap_or_else(|| prev_fiscal_quarter(None));
     let financial_summary = fetch_stock_financial_summary(ticker, &fiscal_quater).await?;
 
-    Ok((fiscal_quater, StockMetrics { financial_summary }))
+    Ok((fiscal_quater, StockMetricset { financial_summary }))
 }
 
 pub async fn get_stock_info(ticker: &Ticker) -> InvmstResult<StockInfo> {

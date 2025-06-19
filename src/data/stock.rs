@@ -1,9 +1,14 @@
 use chrono::NaiveDate;
 use serde::Serialize;
 
-use crate::utils::datetime::FiscalQuarter;
+use crate::{data::daily::DailyDataset, utils::datetime::FiscalQuarter};
 
-pub type StockFiscalMetrics = (FiscalQuarter, StockMetrics);
+pub type StockFiscalMetricset = (FiscalQuarter, StockMetricset);
+
+#[derive(Clone, Debug, Serialize)]
+pub struct StockDailyData {
+    pub daily_valuations: DailyDataset,
+}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct StockDividend {
@@ -58,6 +63,6 @@ pub struct StockInfo {
 }
 
 #[derive(Clone, Debug)]
-pub struct StockMetrics {
+pub struct StockMetricset {
     pub financial_summary: StockFinancialSummary,
 }

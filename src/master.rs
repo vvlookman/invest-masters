@@ -23,14 +23,16 @@ pub enum Master {
     #[strum(
         message = "Benjamin Graham",
         serialize = "graham",
-        serialize = "ben-graham"
+        serialize = "benjamin-graham",
+        serialize = "格雷厄姆"
     )]
     BenjaminGraham,
 
     #[strum(
         message = "Warren Buffett",
         serialize = "buffett",
-        serialize = "warren-buffett"
+        serialize = "warren-buffett",
+        serialize = "巴菲特"
     )]
     WarrenBuffett,
 }
@@ -40,13 +42,30 @@ impl Master {
         &self,
         stock_info: &StockInfo,
         stock_events: &StockEvents,
-        stock_metrics: &[StockFiscalMetrics],
+        stock_daily_data: &StockDailyData,
+        stock_fiscal_metricsets: &[StockFiscalMetricset],
         options: &MasterAnalyzeOptions,
     ) -> InvmstResult<MasterAnalysis> {
         match self {
-            Master::BenjaminGraham => todo!(),
+            Master::BenjaminGraham => {
+                benjamin_graham::analyze(
+                    stock_info,
+                    stock_events,
+                    stock_daily_data,
+                    stock_fiscal_metricsets,
+                    options,
+                )
+                .await
+            }
             Master::WarrenBuffett => {
-                warren_buffett::analyze(stock_info, stock_events, stock_metrics, options).await
+                warren_buffett::analyze(
+                    stock_info,
+                    stock_events,
+                    stock_daily_data,
+                    stock_fiscal_metricsets,
+                    options,
+                )
+                .await
             }
         }
     }
@@ -96,6 +115,7 @@ impl MasterAnalysis {
     }
 }
 
+mod benjamin_graham;
 mod warren_buffett;
 
 static MASTER_ANALYSIS_JSON_PROMPT: &str = r#"

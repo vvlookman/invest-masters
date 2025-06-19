@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use chrono::NaiveDate;
 use serde_json::json;
 
@@ -9,20 +11,22 @@ use crate::{
     utils::datetime::*,
 };
 
-pub async fn fetch_stock_daily_price(ticker: &Ticker) -> InvmstResult<DailyData> {
+pub async fn fetch_stock_daily_valuations(ticker: &Ticker) -> InvmstResult<DailyDataset> {
     match ticker.exchange.as_str() {
         "SSE" | "SZSE" => {
             let json = aktools::call_public_api(
-                "/stock_zh_a_hist",
+                "/stock_value_em",
                 &json!({
-                    "adjust": "hfq",
-                    "period": "daily",
                     "symbol": ticker.symbol,
                 }),
             )
             .await?;
 
-            DailyData::from_json(&json, "日期")
+            let mut value_field_names: HashMap<String, String> = HashMap::new();
+            value_field_names.insert("price".to_string(), "当日收盘价".to_string());
+            value_field_names.insert("market_cap".to_string(), "总市值".to_string());
+
+            DailyDataset::from_json(&json, "数据日期", &value_field_names)
         }
         _ => Err(InvmstError::Invalid(
             "EXCHANGE_NOT_SUPPORTED",

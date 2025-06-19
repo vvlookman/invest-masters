@@ -6,6 +6,7 @@ use strum::IntoEnumIterator;
 use tokio::task::JoinHandle;
 
 use crate::{
+    data::stock::StockDailyData,
     error::*,
     financial::*,
     master::{Master, MasterAnalysis, MasterAnalyzeOptions},
@@ -34,17 +35,21 @@ pub async fn run(ticker: &str, options: &EvaluateOptions) -> InvmstResult<Evalua
         get_stock_events(&ticker, options.date.as_ref(), options.backward_days).await?;
     debug!("{stock_events:?}");
 
-    let mut stock_metrics = vec![];
+    let daily_valuations = get_stock_daily_valuations(&ticker).await?;
+    let stock_daily_data = StockDailyData { daily_valuations };
+    debug!("{stock_daily_data:?}");
+
+    let mut stock_fiscal_metricsets = vec![];
     let fiscal_count = options.backward_days / 91;
     let mut fiscal_quarter = utils::datetime::prev_fiscal_quarter(options.date.as_ref());
     for _ in 0..fiscal_count {
-        let stock_fiscal_metrics =
-            get_stock_fiscal_metrics(&ticker, Some(fiscal_quarter.clone())).await?;
-        stock_metrics.push(stock_fiscal_metrics);
+        let stock_fiscal_metricset =
+            get_stock_fiscal_metricset(&ticker, Some(fiscal_quarter.clone())).await?;
+        stock_fiscal_metricsets.push(stock_fiscal_metricset);
 
         fiscal_quarter = fiscal_quarter.prev();
     }
-    debug!("{stock_metrics:?}");
+    debug!("{stock_fiscal_metricsets:?}");
 
     let mut masters: Vec<Master> = vec![];
     if options.masters.is_empty() {
@@ -75,11 +80,18 @@ pub async fn run(ticker: &str, options: &EvaluateOptions) -> InvmstResult<Evalua
 
         let stock_info = stock_info.clone();
         let stock_events = stock_events.clone();
-        let stock_metrics = stock_metrics.clone();
+        let stock_daily_data = stock_daily_data.clone();
+        let stock_fiscal_metricsets = stock_fiscal_metricsets.clone();
 
         let handle = tokio::spawn(async move {
             master
-                .analyze(&stock_info, &stock_events, &stock_metrics, &options)
+                .analyze(
+                    &stock_info,
+                    &stock_events,
+                    &stock_daily_data,
+                    &stock_fiscal_metricsets,
+                    &options,
+                )
                 .await
         });
         handles.insert(master, handle);

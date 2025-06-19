@@ -29,13 +29,13 @@ pub struct EvaluateCommand {
     )]
     masters: Vec<String>,
 
-    #[arg(help = "Ticker to evaluate, e.g. -t 600900")]
+    #[arg(help = "Ticker to evaluate, e.g. 600900")]
     ticker: String,
 }
 
 impl EvaluateCommand {
     pub async fn exec(&self) {
-        let backward_days = self.backward_days.unwrap_or(730).abs();
+        let backward_days = self.backward_days.unwrap_or(1100).abs();
 
         let date = if let Some(date_str) = &self.date {
             let parsed_date = utils::datetime::date_from_str(date_str);

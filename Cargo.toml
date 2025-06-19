@@ -14,6 +14,7 @@ env_logger = "0.11.8"
 futures = "0.3.31"
 indicatif = { version = "0.17.11", features = ["improved_unicode", "tokio"] }
 log = "0.4.27"
+num-traits = "0.2.19"
 polars = { version = "0.48.1", features = ["lazy"] }
 rayon = "1.10.0"
 regex = "1.11.1"
