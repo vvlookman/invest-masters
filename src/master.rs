@@ -29,6 +29,14 @@ pub enum Master {
     BenjaminGraham,
 
     #[strum(
+        message = "Peter Lynch",
+        serialize = "lynch",
+        serialize = "peter-lynch",
+        serialize = "彼得林奇"
+    )]
+    PeterLynch,
+
+    #[strum(
         message = "Warren Buffett",
         serialize = "buffett",
         serialize = "warren-buffett",
@@ -49,6 +57,16 @@ impl Master {
         match self {
             Master::BenjaminGraham => {
                 benjamin_graham::analyze(
+                    stock_info,
+                    stock_events,
+                    stock_daily_data,
+                    stock_fiscal_metricsets,
+                    options,
+                )
+                .await
+            }
+            Master::PeterLynch => {
+                peter_lynch::analyze(
                     stock_info,
                     stock_events,
                     stock_daily_data,
@@ -116,6 +134,7 @@ impl MasterAnalysis {
 }
 
 mod benjamin_graham;
+mod peter_lynch;
 mod warren_buffett;
 
 static MASTER_ANALYSIS_JSON_PROMPT: &str = r#"

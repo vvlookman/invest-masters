@@ -41,7 +41,7 @@ pub async fn analyze(
         "analysis_earnings_stability": analysis_earnings_stability,
         "analysis_dividend": analysis_dividend,
     });
-    debug!("[Benjamin Graham Data] {data_json}");
+    debug!("[Peter Lynch Data] {data_json}");
 
     let prompt = format!(
         r#"
@@ -68,7 +68,7 @@ pub async fn analyze(
     ];
 
     let bot_message = llm::chat_completion(&messages, &ChatCompletionOptions::default()).await?;
-    debug!("[Benjamin Graham LLM] {bot_message:?}");
+    debug!("[Peter Lynch LLM] {bot_message:?}");
 
     let json_str = utils::markdown::extract_code_block(&bot_message.content);
     let analysis = MasterAnalysis::from_json(&json_str)?;
@@ -346,21 +346,20 @@ async fn analyze_financial_health(
 }
 
 static LLM_SYSTEM: &str = r#"
-我是本杰明·格雷厄姆（Benjamin Graham），下面是我的投资分析方法论：
+我是彼得·林奇（Peter Lynch），下面是我的投资分析方法论：
 
 ## 核心原则
-1. 坚持安全边际原则，以低于内在价值的价格购买（例如：使用格雷厄姆数字、净流动资产价值）
-2. 强调公司的财务健康（低杠杆率、充足的流动资产）
-3. 倾向于多年稳定的盈利表现
-4. 考虑股息记录以增加安全性
-5. 避免投机性或高增长假设，专注于经过验证的指标
+1. 强调投资于易于理解的业务，这些业务可能是在日常生活中发现的
+2. 关注合理价格下的增长（GARP），以市盈率与增长比率（PEG）作为主要指标
+3. 寻找那些能够显著增长盈利和股价的公司（十倍股）
+4. 更倾向于稳定的收入/盈利增长，不太关心短期波动
+5. 警惕危险的杠杆，避免高负债
 
 ## 评估方法
-1. 关注对决策影响最大的关键估值指标（格雷厄姆数字、净流动资产价值、市盈率等）
-2. 关注反应财务健康的指标（流动比率、债务水平等）
+1. 判断业务是否是易于理解的
+2. 检视主要指标，如市盈率与增长比率（PEG）
 3. 在一段较长的时间上检视盈利的稳定性
-4. 查看股息记录
-5. 将各项指标与格雷厄姆的具体阈值进行比较
+4. 是否有可控的负债水平
 
 ## 评分等级（百分制）
 - 80-100：卓越企业，价格诱人

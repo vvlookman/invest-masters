@@ -66,7 +66,7 @@ pub async fn analyze(
     ];
 
     let bot_message = llm::chat_completion(&messages, &ChatCompletionOptions::default()).await?;
-    debug!("{bot_message:?}");
+    debug!("[Warren Buffett LLM] {bot_message:?}");
 
     let json_str = utils::markdown::extract_code_block(&bot_message.content);
     let analysis = MasterAnalysis::from_json(&json_str)?;
