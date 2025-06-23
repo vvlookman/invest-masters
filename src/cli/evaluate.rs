@@ -72,8 +72,11 @@ impl EvaluateCommand {
             Ok(evaluation) => {
                 spinner.finish_with_message(format!("[{}]", self.ticker.cyan()));
 
+                let mut ratings: Vec<u64> = vec![];
                 let mut table_data: Vec<Vec<String>> = vec![];
                 for (master, master_analysis) in evaluation.master_analyses {
+                    ratings.push(master_analysis.rating);
+
                     let prospect_symbol = match master_analysis.prospect {
                         Prospect::Bullish => "↑",
                         Prospect::Bearish => "↓",
@@ -85,6 +88,26 @@ impl EvaluateCommand {
                         master.get_message().unwrap_or_default().to_string(),
                         prospect.to_string(),
                         master_analysis.explanation.to_string(),
+                    ]);
+                }
+
+                if ratings.len() > 0 {
+                    let rating_avg: u64 =
+                        (ratings.iter().sum::<u64>() as f64 / ratings.len() as f64).round() as u64;
+
+                    let prospect_symbol = if rating_avg < 40 {
+                        "↓"
+                    } else if rating_avg < 60 {
+                        "-"
+                    } else {
+                        "↑"
+                    };
+                    let prospect = format!("{prospect_symbol} ({})", rating_avg);
+
+                    table_data.push(vec![
+                        "AVG".to_string(),
+                        prospect.to_string(),
+                        "".to_string(),
                     ]);
                 }
 
