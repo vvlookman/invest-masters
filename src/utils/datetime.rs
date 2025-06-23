@@ -47,7 +47,7 @@ pub fn days_after_epoch(date: &NaiveDate) -> Option<i32> {
 }
 
 pub fn prev_fiscal_quarter(date: Option<&NaiveDate>) -> FiscalQuarter {
-    let date = date.map(|v| *v).unwrap_or(Local::now().date_naive());
+    let date = date.copied().unwrap_or(Local::now().date_naive());
     if date.month() < 4 {
         FiscalQuarter::new(date.year() - 1, Quarter::Q4)
     } else if date.month() < 7 {

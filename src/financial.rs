@@ -27,7 +27,7 @@ pub async fn get_stock_events(
     date: Option<&NaiveDate>,
     backward_days: i64,
 ) -> InvmstResult<StockEvents> {
-    let date_end = date.map(|v| *v).unwrap_or(Local::now().date_naive());
+    let date_end = date.copied().unwrap_or(Local::now().date_naive());
     let date_start = date_end - Duration::days(backward_days);
 
     let dividends = fetch_stock_dividends(ticker, &date_start, &date_end).await?;

@@ -73,7 +73,7 @@ pub async fn analyze(
 async fn analyze_fundamentals(
     stock_fiscal_metricsets: &[StockFiscalMetricset],
 ) -> InvmstResult<AnalysisDraft> {
-    if stock_fiscal_metricsets.len() < 1 {
+    if stock_fiscal_metricsets.is_empty() {
         return Ok(AnalysisDraft {
             score: None,
             assessments: vec!["Insufficient historical data for fundamentals analysis".to_string()],
@@ -123,9 +123,9 @@ async fn analyze_fundamentals(
         let weight = 1.0;
         if free_cash_flow_per_share > 0.0 {
             sum_scores += weight;
-            assessments.push(format!("Positive free cash flow"));
+            assessments.push("Positive free cash flow".to_string());
         } else {
-            assessments.push(format!("No positive free cash flow"));
+            assessments.push("No positive free cash flow".to_string());
         }
         sum_weights += weight;
     }
@@ -255,7 +255,7 @@ async fn analyze_valuation(
     stock_daily_data: &StockDailyData,
     stock_fiscal_metricsets: &[StockFiscalMetricset],
 ) -> InvmstResult<AnalysisDraft> {
-    if stock_fiscal_metricsets.len() < 1 {
+    if stock_fiscal_metricsets.is_empty() {
         return Ok(AnalysisDraft {
             score: None,
             assessments: vec!["Insufficient historical data for valuation analysis".to_string()],

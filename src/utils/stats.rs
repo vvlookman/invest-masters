@@ -1,4 +1,4 @@
-pub fn mean(values: &Vec<f64>) -> Option<f64> {
+pub fn mean(values: &[f64]) -> Option<f64> {
     let sum = values.iter().sum::<f64>();
     let count = values.len();
 
@@ -9,7 +9,7 @@ pub fn mean(values: &Vec<f64>) -> Option<f64> {
     }
 }
 
-pub fn std(values: &Vec<f64>) -> Option<f64> {
+pub fn std(values: &[f64]) -> Option<f64> {
     if let Some(mean) = mean(values) {
         let count = values.len();
         if count > 0 {

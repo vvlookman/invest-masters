@@ -75,7 +75,7 @@ pub async fn run(ticker: &str, options: &EvaluateOptions) -> InvmstResult<Evalua
     for master in masters {
         let options = MasterAnalyzeOptions {
             backward_days: options.backward_days,
-            date: options.date.clone(),
+            date: options.date,
         };
 
         let stock_info = stock_info.clone();

@@ -182,7 +182,7 @@ async fn analyze_earnings_stability(
 async fn analyze_financial_health(
     stock_fiscal_metricsets: &[StockFiscalMetricset],
 ) -> InvmstResult<AnalysisDraft> {
-    if stock_fiscal_metricsets.len() < 1 {
+    if stock_fiscal_metricsets.is_empty() {
         return Ok(AnalysisDraft {
             score: None,
             assessments: vec![
@@ -249,7 +249,7 @@ async fn analyze_valuation(
     stock_daily_data: &StockDailyData,
     stock_fiscal_metricsets: &[StockFiscalMetricset],
 ) -> InvmstResult<AnalysisDraft> {
-    if stock_fiscal_metricsets.len() < 1 {
+    if stock_fiscal_metricsets.is_empty() {
         return Ok(AnalysisDraft {
             score: None,
             assessments: vec!["Insufficient historical data for valuation analysis".to_string()],

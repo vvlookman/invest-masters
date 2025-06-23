@@ -91,7 +91,7 @@ impl EvaluateCommand {
                     ]);
                 }
 
-                if ratings.len() > 0 {
+                if !ratings.is_empty() {
                     let rating_avg: u64 =
                         (ratings.iter().sum::<u64>() as f64 / ratings.len() as f64).round() as u64;
 
@@ -102,7 +102,7 @@ impl EvaluateCommand {
                     } else {
                         "↑"
                     };
-                    let prospect = format!("{prospect_symbol} ({})", rating_avg);
+                    let prospect = format!("{prospect_symbol} ({rating_avg})");
 
                     table_data.push(vec![
                         "AVG".to_string(),

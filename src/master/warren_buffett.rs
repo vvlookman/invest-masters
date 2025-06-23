@@ -169,7 +169,7 @@ async fn analyze_consistency(
 async fn analyze_fundamentals(
     stock_fiscal_metricsets: &[StockFiscalMetricset],
 ) -> InvmstResult<AnalysisDraft> {
-    if stock_fiscal_metricsets.len() < 1 {
+    if stock_fiscal_metricsets.is_empty() {
         return Ok(AnalysisDraft {
             score: None,
             assessments: vec!["Insufficient historical data for fundamentals analysis".to_string()],
@@ -321,11 +321,11 @@ async fn analyze_moat(
 
     let roes: Vec<f64> = stock_fiscal_metricsets
         .iter()
-        .filter_map(|(_, metrics)| metrics.financial_summary.return_on_equity.map(|v| v))
+        .filter_map(|(_, metrics)| metrics.financial_summary.return_on_equity)
         .collect();
     let operating_margins: Vec<f64> = stock_fiscal_metricsets
         .iter()
-        .filter_map(|(_, metrics)| metrics.financial_summary.operating_margin.map(|v| v))
+        .filter_map(|(_, metrics)| metrics.financial_summary.operating_margin)
         .collect();
 
     // 持续的高资本回报率
@@ -373,7 +373,7 @@ async fn analyze_moat(
     {
         let asset_turnovers: Vec<f64> = stock_fiscal_metricsets
             .iter()
-            .filter_map(|(_, metrics)| metrics.financial_summary.asset_turnover.map(|v| v))
+            .filter_map(|(_, metrics)| metrics.financial_summary.asset_turnover)
             .collect();
         if asset_turnovers.len() >= 3 {
             let weight = 1.0;

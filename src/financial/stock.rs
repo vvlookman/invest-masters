@@ -92,7 +92,7 @@ pub async fn fetch_stock_daily_valuations(ticker: &Ticker) -> InvmstResult<Daily
                             if let Some(date) = date_from_str(date_str) {
                                 daily_values_map
                                     .entry(date)
-                                    .or_insert_with(HashMap::new)
+                                    .or_default()
                                     .insert("当日收盘价".to_string(), close.clone());
                             }
                         }
@@ -120,7 +120,7 @@ pub async fn fetch_stock_daily_valuations(ticker: &Ticker) -> InvmstResult<Daily
                             if let Some(date) = date_from_str(date_str) {
                                 daily_values_map
                                     .entry(date)
-                                    .or_insert_with(HashMap::new)
+                                    .or_default()
                                     .insert(indicator.to_string(), value.clone());
                             }
                         }
@@ -227,20 +227,20 @@ pub async fn fetch_stock_dividends(
                 let json = aktools::call_public_api(
                     "/stock_hk_fhpx_detail_ths",
                     &json!({
-                        "symbol": if symbol.starts_with('0') { &symbol[1..] } else { &symbol },
+                        "symbol": if let Some(stripped) = symbol.strip_prefix('0') { stripped } else { &symbol },
                     }),
                 )
                 .await?;
 
                 if let Some(array) = json.as_array() {
-                    for item in array {
-                        let date_announce =
-                            date_from_str(item["公告日期"].as_str().unwrap_or_default());
-                        let date_record =
-                            date_from_str(item["除净日"].as_str().unwrap_or_default());
-                        let plan = item["方案"].as_str().unwrap_or_default();
+                    if let Ok(re) = Regex::new(r"每股(\d+\.?\d*)港元") {
+                        for item in array {
+                            let date_announce =
+                                date_from_str(item["公告日期"].as_str().unwrap_or_default());
+                            let date_record =
+                                date_from_str(item["除净日"].as_str().unwrap_or_default());
+                            let plan = item["方案"].as_str().unwrap_or_default();
 
-                        if let Ok(re) = Regex::new(r"每股(\d+\.?\d*)港元") {
                             if let Some(caps) = re.captures(plan) {
                                 if let Some(matched) = caps.get(1) {
                                     let dividend_per_share = matched.as_str().parse::<f64>().ok();
