@@ -17,7 +17,7 @@ impl MastersCommand {
         }
 
         let mut table = tabled::builder::Builder::from_iter(&table_data).build();
-        table.modify(Columns::first(), Color::FG_GREEN);
+        table.modify(Columns::first(), Color::FG_CYAN);
         println!("{table}");
     }
 }

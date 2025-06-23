@@ -14,7 +14,7 @@ pub struct StockDailyData {
 pub struct StockDividend {
     pub date_announce: NaiveDate,
     pub date_record: NaiveDate,
-    pub dividend_yield: f64,
+    pub dividend_per_share: f64,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -29,7 +29,7 @@ pub struct StockFinancialSummary {
     pub cash_ratio: Option<f64>,
     pub cost_of_profit: Option<f64>,
     pub cost_of_revenue: Option<f64>,
-    pub cost_to_revenue: Option<f64>,
+    pub cost_of_sales: Option<f64>,
     pub current_ratio: Option<f64>,
     pub days_asset_outstanding: Option<f64>,
     pub days_inventory_outstanding: Option<f64>,

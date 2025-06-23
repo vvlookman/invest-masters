@@ -20,14 +20,20 @@ impl FromStr for Ticker {
                 symbol: parts[1].trim().to_uppercase().to_string(),
             })
         } else {
-            let exchange = if s.starts_with("600")
-                || s.starts_with("601")
-                || s.starts_with("603")
-                || s.starts_with("688")
-            {
-                Some("SSE")
-            } else if s.starts_with("000") || s.starts_with("002") || s.starts_with("300") {
-                Some("SZSE")
+            let exchange = if s.len() == 6 {
+                if s.starts_with("600")
+                    || s.starts_with("601")
+                    || s.starts_with("603")
+                    || s.starts_with("688")
+                {
+                    Some("SSE")
+                } else if s.starts_with("000") || s.starts_with("002") || s.starts_with("300") {
+                    Some("SZSE")
+                } else {
+                    None
+                }
+            } else if s.len() == 5 {
+                Some("HKEX")
             } else {
                 None
             };

@@ -27,17 +27,12 @@ pub async fn analyze(
         ));
     }
 
-    let analysis_fundamentals = analyze_fundamentals(stock_fiscal_metricsets).await?;
-    let analysis_consistency = analyze_consistency(stock_fiscal_metricsets).await?;
-    let analysis_moat = analyze_moat(stock_fiscal_metricsets).await?;
-    let analysis_management = analyze_management(stock_events, options.backward_days).await?;
-
     let data_json = json!({
         "basic_information": stock_info,
-        "analysis_fundamentals": analysis_fundamentals,
-        "analysis_consistency": analysis_consistency,
-        "analysis_moat": analysis_moat,
-        "analysis_management": analysis_management,
+        "analysis_fundamentals": analyze_fundamentals(stock_fiscal_metricsets).await?,
+        "analysis_consistency": analyze_consistency(stock_fiscal_metricsets).await?,
+        "analysis_moat": analyze_moat(stock_fiscal_metricsets).await?,
+        "analysis_management": analyze_management(stock_events, options.backward_days).await?,
     });
     debug!("[Warren Buffett Data] {data_json}");
 
@@ -66,7 +61,7 @@ pub async fn analyze(
     ];
 
     let bot_message = llm::chat_completion(&messages, &ChatCompletionOptions::default()).await?;
-    debug!("{bot_message:?}");
+    debug!("[Warren Buffett LLM] {bot_message:?}");
 
     let json_str = utils::markdown::extract_code_block(&bot_message.content);
     let analysis = MasterAnalysis::from_json(&json_str)?;
@@ -177,7 +172,7 @@ async fn analyze_fundamentals(
     if stock_fiscal_metricsets.len() < 1 {
         return Ok(AnalysisDraft {
             score: None,
-            assessments: vec!["Insufficient historical data forfundamentals analysis".to_string()],
+            assessments: vec!["Insufficient historical data for fundamentals analysis".to_string()],
         });
     }
 
@@ -194,6 +189,9 @@ async fn analyze_fundamentals(
         if return_on_equity > 0.15 {
             sum_scores += weight;
             assessments.push(format!("High return on equity ({return_on_equity})"));
+        } else if return_on_equity > 0.07 {
+            sum_scores += weight / 2.0;
+            assessments.push(format!("Acceptable return on equity ({return_on_equity})"));
         } else {
             assessments.push(format!("Low return on equity ({return_on_equity})"));
         }
@@ -206,6 +204,9 @@ async fn analyze_fundamentals(
         if operating_margin > 0.15 {
             sum_scores += weight;
             assessments.push(format!("Strong operating margin ({operating_margin})"));
+        } else if operating_margin > 0.07 {
+            sum_scores += weight / 2.0;
+            assessments.push(format!("Acceptable operating margin ({operating_margin})"));
         } else {
             assessments.push(format!("Weak operating margin ({operating_margin})"));
         }
@@ -218,6 +219,9 @@ async fn analyze_fundamentals(
         if debt_to_equity < 0.5 {
             sum_scores += weight;
             assessments.push(format!("Low debt to equity ({debt_to_equity})"));
+        } else if debt_to_equity < 1.0 {
+            sum_scores += weight / 2.0;
+            assessments.push(format!("Acceptable debt to equity ({debt_to_equity})"));
         } else {
             assessments.push(format!("High debt to equity ({debt_to_equity})"));
         }
@@ -231,6 +235,11 @@ async fn analyze_fundamentals(
             sum_scores += weight;
             assessments.push(format!(
                 "Good liquidity with current ratio ({current_ratio})"
+            ));
+        } else if current_ratio > 0.07 {
+            sum_scores += weight / 2.0;
+            assessments.push(format!(
+                "Acceptable liquidity with current ratio ({current_ratio})"
             ));
         } else {
             assessments.push(format!(
